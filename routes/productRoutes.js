@@ -6,7 +6,6 @@ import {
     updateProduct, 
     deleteProduct} from '../controllers/product/index.js';
 
-
 const router = express.Router();
 
 //Ruta para GET
