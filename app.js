@@ -5,6 +5,7 @@ import paymentRoutes from './routes/payment.routes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import categoryRoutes from './routes/cartRoutes.js';
 import warehouseRoutes from './routes/wareHouseRoutes.js';
+import deliveryRoutes from './routes/deliveryRoutes.js';
 
 
 dotenv.config();
@@ -29,7 +30,8 @@ app.use('/api/categories', categoryRoutes);
 //Cart Routes
 app.use('/api/cart', cartRoutes);
 
-
+//devliveryRoutes
+app.use('/api/delivery', deliveryRoutes); 
 
 
 app.listen(PORT, () => {
