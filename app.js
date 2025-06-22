@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import productRoutes from './routes/productRoutes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import cartRoutes from './routes/cartRoutes.js';
-import categoryRoutes from './routes/cartRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js';
 import warehouseRoutes from './routes/wareHouseRoutes.js';
 import deliveryRoutes from './routes/deliveryRoutes.js';
 
