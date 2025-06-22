@@ -17,20 +17,43 @@ export const createCart = async (req, res) => {
 };
 
 // Agregar un producto al carrito
+// controllers/cart/cartController.js
+
 export const addItemToCart = async (req, res) => {
   const { cartId } = req.params;
-  const { product_id, quantity, unit_price } = req.body;
+  const { product_id, quantity } = req.body;
+
   try {
+    // Obtener el precio actual del producto desde la tabla product
+    const [[product]] = await pool.query(
+      'SELECT price_product FROM product WHERE product_id = ?',
+      [product_id]
+    );
+
+    if (!product) {
+      return res.status(404).json({ message: 'Producto no encontrado' });
+    }
+
+    const unit_price = product.price_product;
+
+    // Insertar en cart_items con el precio obtenido
     await pool.query(
       'INSERT INTO cart_items (cart_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)',
       [cartId, product_id, quantity, unit_price]
     );
-    res.status(201).json({ message: 'Producto agregado al carrito' });
+
+    res.status(201).json({
+      message: 'Producto agregado al carrito',
+      product_id,
+      quantity,
+      unit_price
+    });
   } catch (error) {
     console.error('Error agregando producto al carrito:', error);
     res.status(500).json({ error: 'Error agregando producto al carrito' });
   }
 };
+
 
 // Actualizar cantidad/precio de un producto en el carrito
 export const updateCartItem = async (req, res) => {
