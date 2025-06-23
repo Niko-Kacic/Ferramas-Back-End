@@ -48,20 +48,23 @@ export const deleteWarehouse = async (req, res) => {
 };
 
 //Stock para los warehouses
-// 1. Insertar nuevo stock
+// 1. Insertar nuevo stock o sumar si ya existe
 export const addStock = async (req, res) => {
   const { warehouse_id, product_id, stock } = req.body;
   try {
     await pool.query(
-      'INSERT INTO warehouse_stock (warehouse_id, product_id, stock) VALUES (?, ?, ?)',
+      `INSERT INTO warehouse_stock (warehouse_id, product_id, stock)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE stock = stock + VALUES(stock)`,
       [warehouse_id, product_id, stock]
     );
-    res.status(201).json({ message: 'Stock agregado correctamente' });
+    res.status(201).json({ message: 'Stock agregado correctamente (nuevo o sumado)' });
   } catch (error) {
     console.error('Error agregando stock:', error);
     res.status(500).json({ error: 'Error agregando stock' });
   }
 };
+
 
 // 2. Actualizar stock existente
 export const updateStock = async (req, res) => {
