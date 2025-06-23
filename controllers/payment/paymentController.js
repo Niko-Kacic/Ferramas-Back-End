@@ -31,55 +31,107 @@ export const initPayment = async (req, res) => {
     }
 };
 
+
 export const confirmPayment = async (req, res) => {
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
     try {
         const token = req.body.token_ws;
         const response = await WebpayPlus.Transaction.commit(token);
 
-        // Extraer datos necesarios
         const {
             buy_order,
             session_id,
             amount,
             card_detail,
-            accounting_date,
             transaction_date,
             status
         } = response;
 
-        // Extraer cart_id desde buy_order
         const cartId = parseInt(buy_order.split('-')[1]);
 
-        // Obtener el status_id desde la tabla payment_status
-        const statusResult = await pool.query(
+        const [[cart]] = await connection.query(
+            'SELECT client_id FROM cart WHERE cart_id = ?',
+            [cartId]
+        );
+        const clientId = cart?.client_id;
+
+        if (!clientId) {
+            await connection.rollback();
+            return res.status(404).json({ error: 'Cliente no encontrado para este carrito' });
+        }
+
+        const [[statusRow]] = await connection.query(
             'SELECT status_id FROM payment_status WHERE status_code = ?',
             [status]
         );
-
-        const status_id = statusResult[0]?.status_id;
+        const status_id = statusRow?.status_id;
 
         if (!status_id) {
+            await connection.rollback();
             return res.status(400).json({ error: 'Estado de pago no válido.' });
         }
 
-        // Insertar en payment_detail
-        await pool.query(
-            `INSERT INTO payment_detail (
-                cart_id,
-                payment_amount,
-                payment_method,
-                status_id,
-                payment_time
-            ) VALUES (?, ?, ?, ?, NOW())`,
+        // 1. Registrar el detalle del pago
+        await connection.query(
+            `INSERT INTO payment_detail (cart_id, payment_amount, payment_method, status_id, payment_time)
+             VALUES (?, ?, ?, ?, NOW())`,
             [cartId, amount, card_detail.card_number || 'N/A', status_id]
         );
 
+        // 2. Obtener los productos del carrito
+        const [items] = await connection.query(
+            `SELECT ci.product_id, ci.quantity, p.product_name, p.price_product
+             FROM cart_items ci
+             JOIN product p ON ci.product_id = p.product_id
+             WHERE ci.cart_id = ?`,
+            [cartId]
+        );
+
+        if (items.length === 0) {
+            await connection.rollback();
+            return res.status(400).json({ error: 'El carrito está vacío' });
+        }
+
+        // 3. Crear la boleta
+        const [receiptResult] = await connection.query(
+            `INSERT INTO receipt (client_id, total_amount)
+             VALUES (?, ?)`,
+            [clientId, amount]
+        );
+
+        const receiptId = receiptResult.insertId;
+
+        // 4. Insertar los detalles de la boleta
+        for (const item of items) {
+            await connection.query(
+                `INSERT INTO receipt_detail (receipt_id, product_id, product_name, quantity, unit_price)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [
+                    receiptId,
+                    item.product_id,
+                    item.product_name,
+                    item.quantity,
+                    item.price_product
+                ]
+            );
+        }
+
+        // 5. (Opcional) Limpiar carrito
+        await connection.query('DELETE FROM cart_items WHERE cart_id = ?', [cartId]);
+
+        await connection.commit();
+
         res.json({
-            message: 'Pago confirmado y registrado en la base de datos.',
-            response
+            message: 'Pago confirmado, boleta generada y carrito limpiado.',
+            receipt_id: receiptId
         });
     } catch (error) {
+        await connection.rollback();
         console.error('Error confirmando el pago:', error);
         res.status(500).json({ error: 'Error al confirmar el pago' });
+    } finally {
+        connection.release();
     }
 };
