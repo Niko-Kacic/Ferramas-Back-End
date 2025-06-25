@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Redirigiendo a Webpay...</title>
+</head>
+<body onload="document.forms[0].submit()">
+  <form action="https://webpay3gint.transbank.cl/webpayserver/initTransaction" method="POST">
+    <input type="hidden" name="token_ws" value="01ab51f21747829e9e7f5e13774d47c87c0929ab3e61e32dd49b5f911dabf215" />
+    <noscript>
+      <p>Redireccionamiento automático deshabilitado. Haga clic en el botón:</p>
+      <button type="submit">Ir a Webpay</button>
+    </noscript>
+  </form>
+</body>
+</html>

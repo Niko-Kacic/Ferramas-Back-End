@@ -1,0 +1,29 @@
+<!-- public/confirmacion.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Confirmación de Pago</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    .mensaje {
+      font-size: 20px;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h1>¡Gracias por tu compra!</h1>
+  <p class="mensaje">Tu pago ha sido confirmado correctamente.</p>
+  <p>Token de transacción: <span id="token"></span></p>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById("token").textContent = params.get("token_ws") || 'Token no disponible';
+  </script>
+</body>
+</html>
