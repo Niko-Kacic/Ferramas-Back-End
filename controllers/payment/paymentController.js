@@ -73,7 +73,7 @@ export const confirmPayment = async (req, res) => {
       return res.status(404).json({ error: 'Cliente no encontrado para este carrito' });
     }
 
-    // 3. Validar estado de pago (ejemplo: "AUTHORIZED")
+    // 3. Validar estado de pago
     const [[statusRow]] = await connection.query(
       'SELECT status_id FROM payment_status WHERE status_code = ?',
       [status]
@@ -159,13 +159,47 @@ export const confirmPayment = async (req, res) => {
       );
     }
 
-    // 9. Limpiar carrito
+    // 9. Actualizar estado de delivery si corresponde
+    const [[delivery]] = await connection.query(
+      'SELECT is_delivery FROM delivery WHERE cart_id = ?',
+      [cartId]
+    );
+
+    if (delivery?.is_delivery) {
+      await connection.query(
+        `UPDATE delivery SET delivery_status = 'bought' WHERE cart_id = ?`,
+        [cartId]
+      );
+    }
+
+    // 10. Insertar en purchase_log
+    await connection.query(
+      `INSERT INTO purchase_log (
+        client_id, client_name, client_surname, client_email, phone_number,
+        cart_id, payment_detail_id, payment_amount, payment_method,
+        payment_time, payment_status
+      )
+      SELECT c.client_id, c.client_name, c.client_surname, c.client_email, c.phone_number,
+             ?, ?, ?, ?, NOW(), ?
+      FROM client c
+      WHERE c.client_id = ?`,
+      [
+        cartId,
+        payment_detail_id,
+        amount,
+        card_detail?.card_number || 'N/A',
+        status,
+        clientId
+      ]
+    );
+
+    // 11. Limpiar carrito
     await connection.query('DELETE FROM cart_items WHERE cart_id = ?', [cartId]);
 
     await connection.commit();
 
     res.status(201).json({
-      message: 'Pago confirmado, boleta generada y carrito limpiado.',
+      message: 'Pago confirmado, boleta generada, delivery actualizado y carrito limpiado.',
       receipt_id: receiptId,
       payment_detail_id
     });
@@ -178,6 +212,7 @@ export const confirmPayment = async (req, res) => {
     connection.release();
   }
 };
+
 
 console.log("Configuración de Webpay:", {
   commerceCode: IntegrationCommerceCodes.WEBPAY_PLUS,

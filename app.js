@@ -8,6 +8,8 @@ import warehouseRoutes from './routes/wareHouseRoutes.js';
 import deliveryRoutes from './routes/deliveryRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import receipRoutes from './routes/receipRoutes.js';
+import logRoutes from './routes/receipRoutes.js';
 
 dotenv.config();
 
@@ -38,6 +40,12 @@ app.use('/api/cart', cartRoutes);
 //devliveryRoutes
 app.use('/api/delivery', deliveryRoutes); 
 
+
+app.use('/api/receips', receipRoutes);
+
+
+//Ruta Logs
+app.use('/api/purchase-log', logRoutes);
 
 app.use(express.static(path.join(__dirname, 'html')));
 
