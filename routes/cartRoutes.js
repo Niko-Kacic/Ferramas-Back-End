@@ -5,10 +5,14 @@ import {
   updateCartItem,
   deleteCartItem,
   deleteCart,
-  getCartItems
+  getCartItems,
+  getCartByClientId
 } from '../controllers/cart/cartController.js';
 
 const router = express.Router();
+
+// Obtener el carrito de un cliente específico
+router.get('/client/:clientId', getCartByClientId);
 
 // Crear un nuevo carrito
 router.post('/', createCart);

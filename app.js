@@ -10,6 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import receipRoutes from './routes/receipRoutes.js';
 import logRoutes from './routes/receipRoutes.js';
+import cors from 'cors';
 
 dotenv.config();
 
@@ -19,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
+app.use(cors());
 app.use(express.json());
 
 //Product Routes
@@ -40,15 +41,12 @@ app.use('/api/cart', cartRoutes);
 //devliveryRoutes
 app.use('/api/delivery', deliveryRoutes); 
 
-
 app.use('/api/receips', receipRoutes);
-
 
 //Ruta Logs
 app.use('/api/purchase-log', logRoutes);
 
 app.use(express.static(path.join(__dirname, 'html')));
-
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

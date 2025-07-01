@@ -4,4 +4,5 @@ export {
   updateCartItem, 
   deleteCartItem, 
   deleteCart, 
-  getCartItems} from './cartController'
+  getCartItems,
+  getCartByClientId } from './cartController'
