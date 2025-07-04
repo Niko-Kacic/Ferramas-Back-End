@@ -5,4 +5,5 @@ export {
   deleteCartItem, 
   deleteCart, 
   getCartItems,
-  getCartByClientId } from './cartController'
+  getCartByClientId,
+  confirmPurchase } from './cartController'

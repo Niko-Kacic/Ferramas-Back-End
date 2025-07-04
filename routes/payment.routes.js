@@ -12,8 +12,10 @@ router.post('/confirm', confirmPayment);
 
 router.get('/confirm', (req, res) => {
   const token = req.query.token_ws;
-  res.redirect(`/confirmacion.html?token_ws=${token}`);
+  res.redirect(`http://localhost:5173/confirm?token_ws=${token}`);
 });
 
-
+router.get('/reject', (req, res) => {
+  res.redirect('http://localhost:5173/reject');
+});
 export default router;

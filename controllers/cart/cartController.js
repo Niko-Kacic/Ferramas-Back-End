@@ -70,12 +70,6 @@ export const addItemToCart = async (req, res) => {
       );
     }
 
-    // Restar stock
-    await pool.query(
-      'UPDATE warehouse_stock SET stock = stock - ? WHERE warehouse_id = ? AND product_id = ?',
-      [quantity, warehouseId, product_id]
-    );
-
     res.status(201).json({
       message: 'Producto agregado/actualizado en el carrito',
       product_id,
@@ -138,21 +132,21 @@ export const getCartItems = async (req, res) => {
   try {
     const [items] = await pool.query(
       `SELECT 
-         ci.cart_item_id,
-         ci.product_id,
-         ci.quantity,
-         ci.unit_price,
-         p.product_name,
-         pi.image_url
-       FROM cart_items ci
-       JOIN product p ON ci.product_id = p.product_id
-       LEFT JOIN product_image pi ON pi.product_id = p.product_id AND pi.is_main = TRUE
-       WHERE ci.cart_id = ?`,
+        ci.cart_item_id,
+        ci.product_id,
+        ci.quantity,
+        ci.unit_price,
+        p.product_name,
+        pi.image_url
+      FROM cart_items ci
+      JOIN product p ON ci.product_id = p.product_id
+      LEFT JOIN product_image pi ON pi.product_id = p.product_id AND pi.is_main = TRUE
+      WHERE ci.cart_id = ?`,
       [cartId]
     );
 
     const formatted = items.map(item => ({
-      cart_item_id: item.cart_item_id,
+      cart_item_id: item.cart_item_id, 
       product_id: item.product_id,
       quantity: item.quantity,
       unit_price: item.unit_price,
@@ -168,6 +162,7 @@ export const getCartItems = async (req, res) => {
     res.status(500).json({ error: 'Error obteniendo productos del carrito' });
   }
 };
+
 
 export const getCartByClientId = async (req, res) => {
   const { clientId } = req.params;
@@ -188,3 +183,62 @@ export const getCartByClientId = async (req, res) => {
     res.status(500).json({ error: 'Error al obtener carrito del cliente' });
   }
 };
+
+export const confirmPurchase = async (req, res) => {
+  const { cartId } = req.params;
+  const connection = await pool.getConnection();
+  const warehouseId = 1; 
+
+  try {
+    await connection.beginTransaction();
+
+    // Obtener todos los productos del carrito
+    const [cartItems] = await connection.query(
+      'SELECT product_id, quantity FROM cart_items WHERE cart_id = ?',
+      [cartId]
+    );
+
+    if (cartItems.length === 0) {
+      await connection.release();
+      return res.status(400).json({ message: 'El carrito está vacío.' });
+    }
+
+    // Verificar stock
+    for (const item of cartItems) {
+      const [[stockRow]] = await connection.query(
+        'SELECT stock FROM warehouse_stock WHERE warehouse_id = ? AND product_id = ?',
+        [warehouseId, item.product_id]
+      );
+
+      if (!stockRow || stockRow.stock < item.quantity) {
+        await connection.rollback();
+        await connection.release();
+        return res.status(400).json({
+          message: `Stock insuficiente para el producto ID ${item.product_id}`
+        });
+      }
+    }
+
+    // Restar stock
+    for (const item of cartItems) {
+      await connection.query(
+        'UPDATE warehouse_stock SET stock = stock - ? WHERE warehouse_id = ? AND product_id = ?',
+        [item.quantity, warehouseId, item.product_id]
+      );
+    }
+
+    // Vaciar el carrito
+    await connection.query('DELETE FROM cart_items WHERE cart_id = ?', [cartId]);
+
+    await connection.commit();
+    await connection.release();
+
+    res.status(200).json({ message: 'Compra confirmada y stock actualizado.' });
+  } catch (error) {
+    await connection.rollback();
+    await connection.release();
+    console.error('Error confirmando compra:', error);
+    res.status(500).json({ error: 'Error al confirmar la compra' });
+  }
+};
+

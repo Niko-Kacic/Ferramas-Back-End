@@ -29,7 +29,7 @@ export const initPayment = async (req, res) => {
       `ORD-${cartId}-${Date.now()}`,
       `SESSION-${cartId}-${Date.now()}`,
       amount,
-      'http://localhost:3000/api/payments/confirm'
+      'http://localhost:5173/confirm'
     );
 
     res.json({ token: createResponse.token, url: createResponse.url });

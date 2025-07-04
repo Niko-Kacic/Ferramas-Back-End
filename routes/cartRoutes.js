@@ -6,7 +6,8 @@ import {
   deleteCartItem,
   deleteCart,
   getCartItems,
-  getCartByClientId
+  getCartByClientId,
+  confirmPurchase
 } from '../controllers/cart/cartController.js';
 
 const router = express.Router();
@@ -31,5 +32,8 @@ router.delete('/:cartId/items/:productId', deleteCartItem);
 
 // Eliminar todo el carrito
 router.delete('/:cartId', deleteCart);
+
+// Confirmar compra y generar boleta
+router.post('/:cartId/confirm', confirmPurchase);
 
 export default router;

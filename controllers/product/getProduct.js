@@ -12,7 +12,7 @@ export const getAllProducts = async (req, res) => {
           p.is_active,
           pi.image_url,
           c.category_name,
-          COALESCE(SUM(ws.stock), 0) AS stock  -- suma stock de todos los warehouses
+          COALESCE(SUM(ws.stock), 0) AS stock 
       FROM product p
       LEFT JOIN product_image pi 
           ON p.product_id = pi.product_id AND pi.is_main = TRUE
